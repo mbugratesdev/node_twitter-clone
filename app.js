@@ -24,9 +24,20 @@ app.use(
 app.use('/login', require('./routes/loginRoutes'))
 app.use('/register', require('./routes/registerRoutes'))
 app.use('/logout', require('./routes/logout'))
+app.use('/profile', middleware.requireLogin, require('./routes/profileRoutes'))
+app.use('/posts', middleware.requireLogin, require('./routes/postRoutes'))
+app.use('/uploads', require('./routes/uploadRoutes'))
+app.use('/search', middleware.requireLogin, require('./routes/searchRoutes'))
+app.use(
+    '/messages',
+    middleware.requireLogin,
+    require('./routes/messagesRoutes')
+)
 
 // API routes
 app.use('/api/posts', require('./routes/api/posts'))
+app.use('/api/users', require('./routes/api/users'))
+app.use('/api/chats', require('./routes/api/chats'))
 
 app.get('/', middleware.requireLogin, (req, res, next) => {
     let payload = {
