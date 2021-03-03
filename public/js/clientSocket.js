@@ -1,6 +1,8 @@
 var connected = false
 
-var socket = io('http://localhost:3003')
+var full = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '')
+
+var socket = io(full)
 
 socket.emit('setup', userLoggedIn)
 
