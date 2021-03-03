@@ -619,6 +619,7 @@ button span {
     border: none;
     padding: 8px 12px;
     height: 38px;
+    overflow: hidden;
 }
 
 .chatContainer .footer button {
