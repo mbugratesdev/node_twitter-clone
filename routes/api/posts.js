@@ -147,7 +147,6 @@ router.post('/:id/retweet', async (req, res, next) => {
         })
     }
 
-    // Insert user like
     req.session.user = await User.findByIdAndUpdate(userId, { [option]: { retweets: repost._id } }, { new: true }).catch(
         (error) => {
             console.log(error)
