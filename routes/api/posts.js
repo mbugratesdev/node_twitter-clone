@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const Post = require('../../schemas/PostSchema')
 const User = require('../../schemas/UserSchema')
+const Notification = require('../../schemas/NotificationSchema')
 
 router.get('/', async (req, res, next) => {
     var searchObj = req.query
@@ -78,6 +79,12 @@ router.post('/', async (req, res, next) => {
     Post.create(postData)
         .then(async (newPost) => {
             newPost = await User.populate(newPost, { path: 'postedBy' })
+            newPost = await Post.populate(newPost, { path: 'replyTo' })
+
+            if (newPost.replyTo !== undefined) {
+                await Notification.insertNotification(newPost.replyTo.postedBy, req.session.user._id, 'reply', newPost._id)
+            }
+
             res.status(201).send(newPost)
         })
         .catch((error) => {
@@ -91,30 +98,25 @@ router.put('/:id/like', async (req, res, next) => {
     const userId = req.session.user._id
 
     // Check if user has already like the post
-    var isLiked =
-        req.session.user.likes && req.session.user.likes.includes(postId)
+    var isLiked = req.session.user.likes && req.session.user.likes.includes(postId)
 
     var option = isLiked ? '$pull' : '$addToSet'
 
     // Insert user like
-    req.session.user = await User.findByIdAndUpdate(
-        userId,
-        { [option]: { likes: postId } },
-        { new: true }
-    ).catch((error) => {
+    req.session.user = await User.findByIdAndUpdate(userId, { [option]: { likes: postId } }, { new: true }).catch((error) => {
         console.log(error)
         res.sendStatus(400)
     })
 
     // Inser post like
-    const post = await Post.findByIdAndUpdate(
-        postId,
-        { [option]: { likes: userId } },
-        { new: true }
-    ).catch((error) => {
+    const post = await Post.findByIdAndUpdate(postId, { [option]: { likes: userId } }, { new: true }).catch((error) => {
         console.log(error)
         res.sendStatus(400)
     })
+
+    if (!isLiked) {
+        await Notification.insertNotification(post.postedBy, userId, 'postLike', post._id)
+    }
 
     res.status(200).send(post)
 })
@@ -146,24 +148,22 @@ router.post('/:id/retweet', async (req, res, next) => {
     }
 
     // Insert user like
-    req.session.user = await User.findByIdAndUpdate(
-        userId,
-        { [option]: { retweets: repost._id } },
-        { new: true }
-    ).catch((error) => {
+    req.session.user = await User.findByIdAndUpdate(userId, { [option]: { retweets: repost._id } }, { new: true }).catch(
+        (error) => {
+            console.log(error)
+            res.sendStatus(400)
+        }
+    )
+
+    // Inser post like
+    const post = await Post.findByIdAndUpdate(postId, { [option]: { retweetUsers: userId } }, { new: true }).catch((error) => {
         console.log(error)
         res.sendStatus(400)
     })
 
-    // Inser post like
-    const post = await Post.findByIdAndUpdate(
-        postId,
-        { [option]: { retweetUsers: userId } },
-        { new: true }
-    ).catch((error) => {
-        console.log(error)
-        res.sendStatus(400)
-    })
+    if (!deletedPost) {
+        await Notification.insertNotification(post.postedBy, userId, 'retweet', post._id)
+    }
 
     res.status(200).send(post)
 })
@@ -179,10 +179,7 @@ router.delete('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
     if (req.body.pinned !== undefined) {
-        await Post.updateMany(
-            { postedBy: req.session.user },
-            { pinned: false }
-        ).catch((error) => {
+        await Post.updateMany({ postedBy: req.session.user }, { pinned: false }).catch((error) => {
             console.log(error)
             res.sendStatus(400)
         })
