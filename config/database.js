@@ -11,9 +11,7 @@ class Database {
 
     connect() {
         mongoose
-            .connect(
-                'mongodb+srv://admin:12345@twitterclonecluster.oeedy.mongodb.net/TwitterCloneDB?retryWrites=true&w=majority'
-            )
+            .connect(process.env.MONGO_URI)
             .then(() => {
                 console.log('Database connection successful')
             })
