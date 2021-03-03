@@ -1,3 +1,4 @@
 node_modules/*
-uploads/images/*
+uploads/images/
 config/config.env
+*.png
